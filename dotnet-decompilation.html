@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A short DevLabs.cz field note on decompiling .NET WinForms binaries for firmware and protocol research.">
+    <title>Decompiling .NET Binaries | DevLabs.cz</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="article-page">
+    <header class="site-header">
+        <a class="brand" href="index.html">DevLabs.cz</a>
+        <nav class="nav" aria-label="Primary">
+            <a href="index.html#lab">Lab</a>
+            <a href="index.html#uv4r">iRadio UV-4R</a>
+            <a href="index.html#notes">Notes</a>
+        </nav>
+    </header>
+
+    <main class="article-main">
+        <article class="article">
+            <header class="article-hero">
+                <p class="eyebrow">Field note</p>
+                <h1>Decompiling .NET binaries</h1>
+                <p class="hero-copy">
+                    Many vendor firmware utilities are ordinary .NET WinForms programs. That makes them unusually
+                    friendly to inspect: the UI, event handlers, embedded resources, and serial protocol logic often
+                    come back as readable C#.
+                </p>
+            </header>
+
+            <section class="article-body">
+                <div class="callout">
+                    <h2>Ground rules</h2>
+                    <p>
+                        Work on software you are allowed to analyze, keep samples in an isolated directory or VM,
+                        hash the original files before touching them, and prefer static inspection before running
+                        unknown executables.
+                    </p>
+                </div>
+
+                <h2>Quick workflow</h2>
+                <ol class="steps">
+                    <li>
+                        <h3>Identify the binary</h3>
+                        <p>
+                            Check whether the executable is a managed .NET assembly. On Linux, <code>file</code>,
+                            <code>strings</code>, and PE metadata are usually enough. Useful hints include
+                            <code>mscoree.dll</code>, <code>_CorExeMain</code>, <code>.NET Framework</code>, or
+                            obvious namespace/class names in strings.
+                        </p>
+                    </li>
+                    <li>
+                        <h3>Record hashes and metadata</h3>
+                        <p>
+                            Save SHA-256, file size, timestamp, product metadata, target framework, platform target,
+                            and any embedded PDB path. These details make later notes reproducible.
+                        </p>
+                    </li>
+                    <li>
+                        <h3>Open it in ILSpy</h3>
+                        <p>
+                            Use ILSpy or <code>ilspycmd</code> to inspect the assembly. For a command-line export,
+                            install the tool in your analysis environment and write the recovered project to a
+                            separate folder.
+                        </p>
+                        <pre><code>dotnet tool install --global ilspycmd
+ilspycmd -p -o decompiled VendorTool.exe</code></pre>
+                    </li>
+                    <li>
+                        <h3>Start from the entry point</h3>
+                        <p>
+                            In WinForms tools, read <code>Program.cs</code> first, then the main form. Event handlers
+                            such as button clicks, timers, and serial <code>DataReceived</code> callbacks usually
+                            reveal the real state machine faster than reading every class top to bottom.
+                        </p>
+                    </li>
+                    <li>
+                        <h3>Follow resources and constants</h3>
+                        <p>
+                            Check <code>.resx</code> files, embedded strings, byte arrays, and large literals.
+                            Firmware updaters often hide Intel HEX, raw firmware blocks, command frames, checksums,
+                            and UI instructions directly in the decompiled C#.
+                        </p>
+                    </li>
+                    <li>
+                        <h3>Separate facts from decompiler noise</h3>
+                        <p>
+                            Decompiled projects are analysis artifacts, not clean source releases. Expect odd names,
+                            dead helper classes, broken designer code, and control flow that needs manual cleanup
+                            before it can be rebuilt.
+                        </p>
+                    </li>
+                </ol>
+
+                <h2>What to extract from updater tools</h2>
+                <div class="article-grid">
+                    <section>
+                        <h3>Protocol shape</h3>
+                        <p>Port settings, handshake bytes, ACK/error handling, block size, checksum calculation, timeouts, and retry behavior.</p>
+                    </section>
+                    <section>
+                        <h3>Firmware payload</h3>
+                        <p>Embedded HEX or binary data, padding rules, transfer length, hashes, load address, vector table, and version strings.</p>
+                    </section>
+                    <section>
+                        <h3>Safety signals</h3>
+                        <p>Whether the host verifies signatures, validates checksums, checks device identity, or blindly trusts the bootloader.</p>
+                    </section>
+                    <section>
+                        <h3>Operational notes</h3>
+                        <p>Vendor warnings, required companion tools, resource loaders, CPS compatibility, and assumptions baked into the UI.</p>
+                    </section>
+                </div>
+
+                <h2>UV-4R example</h2>
+                <p>
+                    In the UV-4R update bundle, the .NET decompile was enough to recover the high-level flashing
+                    flow, find the embedded Intel HEX firmware string, identify the serial state machine, and explain
+                    why the updater behaves like a fixed-image flasher rather than a general update manager.
+                </p>
+                <p>
+                    After extraction, the firmware itself becomes a separate embedded-analysis task: reconstruct the
+                    binary image, load it at the correct Cortex-M base address, seed the vector table, and then move
+                    into disassembly or Ghidra.
+                </p>
+            </section>
+        </article>
+    </main>
+
+    <footer class="site-footer">
+        <p>&copy; 2026 DevLabs.cz</p>
+    </footer>
+</body>
+</html>
