@@ -3,32 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="DevLabs.cz - Playing with sites">
-    <title>DevLabs.cz</title>
+    <meta name="description" content="DevLabs.cz is a small reverse engineering lab for firmware, radios, embedded tools, and protocol research.">
+    <title>DevLabs.cz | Reverse Engineering Lab</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>DevLabs.cz</h1>
-            <p class="tagline">Playing with sites</p>
-        </header>
-        
-        <main>
-            <section class="welcome">
-                <h2>Welcome</h2>
-                <p>This is the home of DevLabs.cz, a space for experimenting with web development and site design.</p>
-            </section>
-            
-            <section class="projects">
-                <h2>Projects</h2>
-                <p>Check back soon for updates on our latest projects and experiments.</p>
-            </section>
-        </main>
-        
-        <footer>
-            <p>&copy; 2024 DevLabs.cz</p>
-        </footer>
-    </div>
+    <header class="site-header">
+        <a class="brand" href="#top">DevLabs.cz</a>
+        <nav class="nav" aria-label="Primary">
+            <a href="#lab">Lab</a>
+            <a href="#uv4r">iRadio UV-4R</a>
+            <a href="#notes">Notes</a>
+        </nav>
+    </header>
+
+    <main id="top">
+        <section class="hero" id="lab">
+            <div class="hero-visual" aria-hidden="true">
+                <div class="trace trace-a"></div>
+                <div class="trace trace-b"></div>
+                <div class="trace trace-c"></div>
+                <div class="spectrum">
+                    <span style="--level: 38%"></span>
+                    <span style="--level: 72%"></span>
+                    <span style="--level: 54%"></span>
+                    <span style="--level: 86%"></span>
+                    <span style="--level: 46%"></span>
+                    <span style="--level: 65%"></span>
+                    <span style="--level: 33%"></span>
+                    <span style="--level: 77%"></span>
+                    <span style="--level: 50%"></span>
+                    <span style="--level: 69%"></span>
+                    <span style="--level: 41%"></span>
+                    <span style="--level: 82%"></span>
+                </div>
+            </div>
+            <div class="hero-content">
+                <p class="eyebrow">Firmware / radio / protocol research</p>
+                <h1>Reverse<br>engineering<br>lab notes</h1>
+                <p class="hero-copy">
+                    DevLabs.cz collects hands-on findings from static analysis, embedded firmware extraction,
+                    serial protocol review, and radio tooling experiments.
+                </p>
+                <a class="hero-link" href="#uv4r">Read the UV-4R findings</a>
+            </div>
+            <dl class="hero-facts" aria-label="Current lab focus">
+                <div>
+                    <dt>Current focus</dt>
+                    <dd>iRadio UV-4R</dd>
+                </div>
+                <div>
+                    <dt>Artifact type</dt>
+                    <dd>Vendor updater and firmware</dd>
+                </div>
+                <div>
+                    <dt>Approach</dt>
+                    <dd>Static-first, reproducible notes</dd>
+                </div>
+            </dl>
+        </section>
+
+        <section class="section intro" id="uv4r">
+            <div class="section-heading">
+                <p class="eyebrow">Current research</p>
+                <h2>iRadio UV-4R / DM-UV4R firmware study</h2>
+                <p>
+                    We inspected the February 2026 vendor update bundle around the UV-4R family:
+                    the radio firmware updater, the slower updater variant, the Unicode/resource loader,
+                    the matching CPS, and the separate DMR-side upgrade tool.
+                </p>
+            </div>
+
+            <div class="findings-grid">
+                <article>
+                    <span class="card-kicker">Host tools</span>
+                    <h3>Small .NET serial utilities</h3>
+                    <p>
+                        The Windows tools are compact WinForms applications. The observed host-side behavior
+                        is local UI plus COM-port I/O; no network activity, persistence, or process-launching
+                        behavior was found in the decompiled updater logic.
+                    </p>
+                </article>
+                <article>
+                    <span class="card-kicker">Firmware image</span>
+                    <h3>Embedded Cortex-M payload</h3>
+                    <p>
+                        The V3.25 image dated 2026-02-05 is embedded as Intel HEX, extracts cleanly, and looks
+                        like an ARM Cortex-M application beginning after a bootloader region at 0x08002800.
+                        Strings identify a 400-480 MHz build.
+                    </p>
+                </article>
+                <article>
+                    <span class="card-kicker">Update path</span>
+                    <h3>ACK-driven block transfer</h3>
+                    <p>
+                        The updater streams a fixed padded buffer over serial in 1 KiB payload blocks. The
+                        protocol is simple and practical for the vendor bootloader, but the host tool relies on
+                        weak checksums, minimal retry logic, and no visible firmware signature verification.
+                    </p>
+                </article>
+                <article>
+                    <span class="card-kicker">Programming data</span>
+                    <h3>CPS and resource compatibility</h3>
+                    <p>
+                        The matching CPS V2.06 works with a 1 MiB codeplug and the vendor notes warn against
+                        reusing old saved files after the update. The Unicode loader writes resource tables so
+                        text features keep working after firmware migration.
+                    </p>
+                </article>
+            </div>
+
+            <div class="lab-note">
+                <h3>What we learned at a high level</h3>
+                <ul>
+                    <li>The updater is more of a fixed-image serial flasher than a general firmware manager.</li>
+                    <li>The clean firmware extraction can be reproduced from the embedded Intel HEX records.</li>
+                    <li>The radio firmware is analyzable with normal Cortex-M tooling once loaded at the right base address.</li>
+                    <li>The update ecosystem includes both application firmware, DMR-side firmware, CPS data, and Unicode resources.</li>
+                    <li>The security model appears to depend heavily on the device bootloader, not on strong host-side validation.</li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="section note-columns" id="notes">
+            <div class="section-heading compact">
+                <p class="eyebrow">Lab style</p>
+                <h2>How notes are kept</h2>
+            </div>
+            <article>
+                <h3>Reproducible artifacts</h3>
+                <p>Prefer extracted binaries, checksums, decompiler output, and scripts over screenshots or one-off observations.</p>
+            </article>
+            <article>
+                <h3>High-level public summaries</h3>
+                <p>Publish the shape of what was learned while keeping risky operational details out of the landing page.</p>
+            </article>
+            <article>
+                <h3>Embedded context</h3>
+                <p>Track firmware layout, bootloader boundaries, serial behavior, and vendor tooling assumptions together.</p>
+            </article>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <p>&copy; 2026 DevLabs.cz</p>
+    </footer>
 </body>
 </html>
